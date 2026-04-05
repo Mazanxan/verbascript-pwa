@@ -1,10 +1,10 @@
 const CACHE_NAME = 'verbascript-v1';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png'
+  '/verbascript-pwa/',
+  '/verbascript-pwa/index.html',
+  '/verbascript-pwa/manifest.json',
+  '/verbascript-pwa/icon-192.png',
+  '/verbascript-pwa/icon-512.png'
 ];
 
 self.addEventListener('install', event => {
