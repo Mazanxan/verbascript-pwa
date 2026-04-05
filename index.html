@@ -1,0 +1,404 @@
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>VerbaScript — голос в текст</title>
+    <meta name="description" content="Превращаем голосовые сообщения в чистый текст с автоматической пунктуацией">
+    <meta name="theme-color" content="#007aff">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 32px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 32px 24px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+        
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 32px 24px;
+        }
+        
+        .upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 20px;
+            padding: 48px 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #fafafa;
+        }
+        
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f0f0ff;
+            transform: scale(1.01);
+        }
+        
+        .upload-area.drag-over {
+            border-color: #667eea;
+            background: #e8e8ff;
+        }
+        
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        
+        .upload-text {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .upload-hint {
+            font-size: 14px;
+            color: #999;
+        }
+        
+        .file-info {
+            margin-top: 16px;
+            padding: 12px;
+            background: #e8f4e8;
+            border-radius: 12px;
+            display: none;
+            font-size: 14px;
+            color: #2c5f2d;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 40px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 24px;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 24px;
+            padding: 20px;
+            background: #f0f0f0;
+            border-radius: 16px;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e0e0e0;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 12px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .result {
+            display: none;
+            margin-top: 24px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 16px;
+            border-left: 4px solid #28a745;
+        }
+        
+        .result-title {
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #28a745;
+        }
+        
+        .result-text {
+            line-height: 1.6;
+            color: #333;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 15px;
+        }
+        
+        .copy-btn {
+            background: #28a745;
+            margin-top: 16px;
+            padding: 10px 20px;
+            font-size: 14px;
+        }
+        
+        .error {
+            display: none;
+            margin-top: 24px;
+            padding: 16px;
+            background: #fee;
+            border-radius: 16px;
+            border-left: 4px solid #dc3545;
+            color: #dc3545;
+        }
+        
+        .tariff-info {
+            margin-top: 24px;
+            padding: 16px;
+            background: #f0f0f0;
+            border-radius: 16px;
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                border-radius: 24px;
+            }
+            .content {
+                padding: 24px 16px;
+            }
+            .upload-area {
+                padding: 32px 16px;
+            }
+            .header h1 {
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎙️ VerbaScript</h1>
+            <p>Голос → чистый текст за секунды</p>
+        </div>
+        
+        <div class="content">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📁</div>
+                <div class="upload-text">Нажми или перетащи файл</div>
+                <div class="upload-hint">MP3, WAV, OGG, M4A до 50 МБ</div>
+            </div>
+            <input type="file" id="fileInput" accept="audio/*" style="display:none">
+            <div class="file-info" id="fileInfo"></div>
+            
+            <button id="processBtn" disabled>🚀 Отправить на распознавание</button>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <div>⏳ Обработка аудио...<br><small>Это может занять 10–30 секунд</small></div>
+            </div>
+            
+            <div class="result" id="result">
+                <div class="result-title">✅ Распознанный текст:</div>
+                <div class="result-text" id="resultText"></div>
+                <button class="copy-btn" id="copyBtn">📋 Скопировать текст</button>
+            </div>
+            
+            <div class="error" id="error"></div>
+            
+            <div class="tariff-info">
+                🎯 Бесплатно: 3 минуты в день<br>
+                💎 Базовый (200₽/мес): 30 минут в день<br>
+                ⭐ Про (600₽/мес): безлимит + пунктуация
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+        
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const processBtn = document.getElementById('processBtn');
+        const loading = document.getElementById('loading');
+        const resultDiv = document.getElementById('result');
+        const resultText = document.getElementById('resultText');
+        const errorDiv = document.getElementById('error');
+        const copyBtn = document.getElementById('copyBtn');
+        
+        // Клик по области загрузки
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
+        // Drag & drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('drag-over');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) handleFile(files[0]);
+        });
+        
+        // Выбор файла через диалог
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) handleFile(e.target.files[0]);
+        });
+        
+        // Обработка выбранного файла
+        function handleFile(file) {
+            if (!file.type.startsWith('audio/')) {
+                showError('Пожалуйста, выберите аудиофайл (MP3, WAV, OGG, M4A)');
+                return;
+            }
+            
+            if (file.size > 50 * 1024 * 1024) {
+                showError('Файл слишком большой. Максимум 50 МБ');
+                return;
+            }
+            
+            selectedFile = file;
+            processBtn.disabled = false;
+            
+            // Показываем информацию о файле
+            const sizeMB = (file.size / 1024 / 1024).toFixed(2);
+            fileInfo.innerHTML = `📎 Выбран: ${file.name} (${sizeMB} МБ)`;
+            fileInfo.style.display = 'block';
+            uploadArea.style.borderColor = '#28a745';
+            uploadArea.style.background = '#f0fff0';
+            showError('');
+        }
+        
+        // Отправка на сервер
+        processBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+            
+            processBtn.disabled = true;
+            loading.style.display = 'block';
+            resultDiv.style.display = 'none';
+            showError('');
+            
+            const formData = new FormData();
+            formData.append('audio', selectedFile);
+            
+            try {
+                // TODO: Заменить URL на реальный после настройки бэкенда
+                const API_URL = 'https://your-server.com/api/recognize';
+                
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || `Ошибка ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const recognizedText = data.text || data.result || 'Текст не распознан';
+                
+                resultText.textContent = recognizedText;
+                resultDiv.style.display = 'block';
+                
+            } catch (err) {
+                console.error('Ошибка:', err);
+                showError('Ошибка при распознавании: ' + err.message + '. Пожалуйста, попробуйте позже.');
+            } finally {
+                loading.style.display = 'none';
+                processBtn.disabled = false;
+            }
+        });
+        
+        // Копирование текста
+        copyBtn.addEventListener('click', () => {
+            const text = resultText.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                copyBtn.textContent = '✅ Скопировано!';
+                setTimeout(() => {
+                    copyBtn.textContent = '📋 Скопировать текст';
+                }, 2000);
+            }).catch(() => {
+                alert('Не удалось скопировать текст');
+            });
+        });
+        
+        function showError(msg) {
+            if (msg) {
+                errorDiv.textContent = msg;
+                errorDiv.style.display = 'block';
+            } else {
+                errorDiv.style.display = 'none';
+            }
+        }
+        
+        // Service Worker для PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').then(registration => {
+                    console.log('ServiceWorker зарегистрирован');
+                }).catch(err => {
+                    console.log('ServiceWorker не зарегистрирован:', err);
+                });
+            });
+        }
+        
+        // Проверка, установлено ли приложение на телефон
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            console.log('Можно установить PWA');
+        });
+    </script>
+</body>
+</html>
