@@ -2,7 +2,7 @@
   "name": "VerbaScript — голос в текст",
   "short_name": "VerbaScript",
   "description": "Превращаем голосовые сообщения в чистый текст с автоматической пунктуацией",
-  "start_url": "/verbascript-pwa/index.html"
+  "start_url": "/verbascript-pwa/index.html",
   "display": "standalone",
   "theme_color": "#667eea",
   "background_color": "#ffffff",
@@ -21,3 +21,4 @@
       "purpose": "any maskable"
     }
   ]
+}
